@@ -108,6 +108,8 @@ public class ManagementServer extends AbstractServer {
             recovered.set(true);
         }
 
+        // The management server if run as single node will have the incorrect cluster ID. It updates this
+        // cluster ID once it connects its runtime and fetches the latest layout.
         if((Boolean) opts.get("--single")) {
             String localAddress = opts.get("--address") + ":" + opts.get("<port>");
 
@@ -124,6 +126,7 @@ public class ManagementServer extends AbstractServer {
                                     )
                             )
                     )),
+                    Collections.EMPTY_LIST,
                     0L
             );
 
@@ -176,8 +179,11 @@ public class ManagementServer extends AbstractServer {
         // Cannot update with a null layout.
         if (layout == null) return;
 
-        // Update only if new layout has a higher epoch than the existing layout.
-        if (latestLayout == null || layout.getEpoch() > latestLayout.getEpoch()) {
+        // Update if new layout has a higher epoch than the existing layout.
+        // Or if the cluster ID is different.
+        if (latestLayout == null ||
+                layout.getEpoch() > latestLayout.getEpoch() ||
+                !layout.getClusterId().equals(latestLayout.getClusterId())) {
             latestLayout = layout;
             // Persisting this new updated layout
             setCurrentLayout(latestLayout);

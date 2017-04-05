@@ -5,7 +5,9 @@ import com.google.gson.GsonBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.corfudb.runtime.CorfuRuntime;
-import org.corfudb.runtime.clients.*;
+import org.corfudb.runtime.clients.LayoutClient;
+import org.corfudb.runtime.clients.LogUnitClient;
+import org.corfudb.runtime.clients.SequencerClient;
 import org.corfudb.runtime.exceptions.QuorumUnreachableException;
 import org.corfudb.runtime.exceptions.WrongEpochException;
 import org.corfudb.runtime.view.replication.*;
@@ -38,6 +40,11 @@ public class Layout implements Cloneable {
     static final Gson parser = new GsonBuilder()
             .registerTypeAdapter(Layout.class, new LayoutDeserializer())
             .create();
+    /**
+     * The clusterID of this layout cluster.
+     */
+    @Getter
+    final UUID clusterId;
     /**
      * A list of layout servers in the layout.
      */
@@ -76,8 +83,8 @@ public class Layout implements Cloneable {
      * this constructor.
      */
     public Layout(@NonNull List<String> layoutServers, @NonNull List<String> sequencers,
-                  @NonNull List<LayoutSegment> segments, @NonNull List<String> unresponsiveServers, long epoch) {
-
+                  @NonNull List<LayoutSegment> segments, @NonNull List<String> unresponsiveServers, long epoch,
+                  UUID clusterId) {
         this.layoutServers = layoutServers;
         this.sequencers = sequencers;
         this.segments = segments;
@@ -92,10 +99,15 @@ public class Layout implements Cloneable {
             requireNonNull(segment.stripes);
             if (segment.stripes.size() == 0) throw new IllegalArgumentException("One segment has an empty list of stripes");
         }
+        this.clusterId = clusterId;
+    }
+
+    public Layout(List<String> layoutServers, List<String> sequencers, List<LayoutSegment> segments, List<String> unresponsiveServers, long epoch) {
+        this(layoutServers, sequencers, segments, unresponsiveServers, epoch, UUID.randomUUID());
     }
 
     public Layout(List<String> layoutServers, List<String> sequencers, List<LayoutSegment> segments, long epoch) {
-        this(layoutServers, sequencers, segments, new ArrayList<String>(), epoch);
+        this(layoutServers, sequencers, segments, new ArrayList<>(), epoch, UUID.randomUUID());
     }
 
     /**

@@ -254,7 +254,8 @@ public class LayoutWorkflowManager {
                 layout.getSequencers(),
                 layout.getSegments(),
                 layout.getUnresponsiveServers(),
-                this.epoch);
+                this.epoch,
+                layout.getClusterId());
     }
 
 }

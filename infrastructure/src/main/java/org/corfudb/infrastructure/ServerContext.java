@@ -7,6 +7,7 @@ import org.corfudb.util.MetricsUtils;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.corfudb.util.MetricsUtils.addJVMMetrics;
 import static org.corfudb.util.MetricsUtils.isMetricsReportingSetUp;
@@ -30,6 +31,8 @@ public class ServerContext {
     private static final String KEY_EPOCH = "CURRENT";
     private static final String PREFIX_TAIL_SEGMENT = "TAIL_SEGMENT";
     private static final String KEY_TAIL_SEGMENT = "CURRENT";
+    private static final String PREFIX_CLUSTER_ID = "CLUSTER_ID";
+    private static final String KEY_CLUSTER_ID = "CURRENT_CLUSTER_ID";
 
     /**
      * various duration constants
@@ -98,5 +101,18 @@ public class ServerContext {
 
     public void setTailSegment(long tailSegment) {
         dataStore.put(Long.class, PREFIX_TAIL_SEGMENT, KEY_TAIL_SEGMENT, tailSegment);
+    }
+
+    /**
+     * The ID for this cluster.
+     */
+    public synchronized UUID getClusterId() {
+        UUID clusterId = dataStore.get(UUID.class, PREFIX_CLUSTER_ID, KEY_CLUSTER_ID);
+        return clusterId;
+    }
+
+    public synchronized  void setClusterId(UUID clusterId) {
+        dataStore.put(UUID.class, PREFIX_CLUSTER_ID, KEY_CLUSTER_ID, clusterId);
+        serverRouter.setClusterId(clusterId);
     }
 }
