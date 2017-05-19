@@ -31,8 +31,8 @@ public class ServerContext {
     private static final String KEY_EPOCH = "CURRENT";
     private static final String PREFIX_TAIL_SEGMENT = "TAIL_SEGMENT";
     private static final String KEY_TAIL_SEGMENT = "CURRENT";
-    private static final String PREFIX_CLUSTER_ID = "CLUSTER_ID";
-    private static final String KEY_CLUSTER_ID = "CURRENT_CLUSTER_ID";
+    private static final String PREFIX_CLUSTER_ID = "UUID";
+    private static final String KEY_CLUSTER_ID = "CLUSTER_ID";
 
     /**
      * various duration constants

@@ -78,6 +78,7 @@ public class LayoutServer extends AbstractServer {
 
     private void getSingleNodeLayout() {
         String localAddress = opts.get("--address") + ":" + opts.get("<port>");
+        UUID clusterId = getServerClusterID() == null ? UUID.randomUUID() : getServerClusterID();
         setCurrentLayout(new Layout(
                 Collections.singletonList(localAddress),
                 Collections.singletonList(localAddress),
@@ -93,7 +94,7 @@ public class LayoutServer extends AbstractServer {
                 )),
                 Collections.EMPTY_LIST,
                 0L,
-                UUID.randomUUID()
+                clusterId
         ));
     }
 
@@ -228,6 +229,13 @@ public class LayoutServer extends AbstractServer {
             log.trace("Incoming message with wrong epoch, got {}, expected {}, message was: {}", msg.getPayload().getEpoch(), serverEpoch, msg);
             return;
         }
+        if (!proposeLayout.getClusterId().equals(getServerClusterID())) {
+            r.sendResponse(ctx, msg, CorfuMsgType.WRONG_CLUSTER_ID.payloadMsg(getServerClusterID()));
+            log.trace("Incoming message with wrong clusterID, got {}, expected {}, message was: {}",
+                    proposeLayout.getClusterId(), getServerClusterID(), msg);
+            return;
+        }
+
         // This is a propose. If no prepare, reject.
         if (phase1Rank == null) {
             log.debug("Rejected phase 2 propose of rank={}, phase1Rank=none", proposeRank);
@@ -272,6 +280,10 @@ public class LayoutServer extends AbstractServer {
         long serverEpoch = getServerEpoch();
         if(msg.getPayload().getEpoch() < serverEpoch) {
             r.sendResponse(ctx, msg, new CorfuPayloadMsg<>(CorfuMsgType.WRONG_EPOCH, serverEpoch));
+            return;
+        }
+        if (!commitLayout.getClusterId().equals(getServerClusterID())) {
+            r.sendResponse(ctx, msg, CorfuMsgType.WRONG_CLUSTER_ID.payloadMsg(getServerClusterID()));
             return;
         }
 
@@ -338,6 +350,10 @@ public class LayoutServer extends AbstractServer {
 
     private long getServerEpoch() {
         return serverContext.getServerEpoch();
+    }
+
+    private UUID getServerClusterID() {
+        return serverContext.getClusterId();
     }
 
     public List<Layout> getLayoutHistory() {

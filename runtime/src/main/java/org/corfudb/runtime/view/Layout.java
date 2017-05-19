@@ -84,7 +84,7 @@ public class Layout implements Cloneable {
      */
     public Layout(@NonNull List<String> layoutServers, @NonNull List<String> sequencers,
                   @NonNull List<LayoutSegment> segments, @NonNull List<String> unresponsiveServers, long epoch,
-                  UUID clusterId) {
+                  @NonNull UUID clusterId) {
         this.layoutServers = layoutServers;
         this.sequencers = sequencers;
         this.segments = segments;

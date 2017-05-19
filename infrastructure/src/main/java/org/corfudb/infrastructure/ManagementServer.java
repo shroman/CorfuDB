@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
@@ -108,10 +109,9 @@ public class ManagementServer extends AbstractServer {
             recovered.set(true);
         }
 
-        // The management server if run as single node will have the incorrect cluster ID. It updates this
-        // cluster ID once it connects its runtime and fetches the latest layout.
         if((Boolean) opts.get("--single")) {
             String localAddress = opts.get("--address") + ":" + opts.get("<port>");
+            UUID clusterId = serverContext.getClusterId() == null ? UUID.randomUUID() : serverContext.getClusterId();
 
             Layout singleLayout = new Layout(
                     Collections.singletonList(localAddress),
@@ -127,7 +127,8 @@ public class ManagementServer extends AbstractServer {
                             )
                     )),
                     Collections.EMPTY_LIST,
-                    0L
+                    0L,
+                    clusterId
             );
 
             safeUpdateLayout(singleLayout);
@@ -179,11 +180,8 @@ public class ManagementServer extends AbstractServer {
         // Cannot update with a null layout.
         if (layout == null) return;
 
-        // Update if new layout has a higher epoch than the existing layout.
-        // Or if the cluster ID is different.
-        if (latestLayout == null ||
-                layout.getEpoch() > latestLayout.getEpoch() ||
-                !layout.getClusterId().equals(latestLayout.getClusterId())) {
+        // Update only if new layout has a higher epoch than the existing layout.
+        if (latestLayout == null || layout.getEpoch() > latestLayout.getEpoch()) {
             latestLayout = layout;
             // Persisting this new updated layout
             setCurrentLayout(latestLayout);
@@ -228,7 +226,7 @@ public class ManagementServer extends AbstractServer {
     @ServerHandler(type = CorfuMsgType.MANAGEMENT_BOOTSTRAP_REQUEST, opTimer = metricsPrefix + "bootstrap-request")
     public synchronized void handleManagementBootstrap(CorfuPayloadMsg<Layout> msg, ChannelHandlerContext ctx, IServerRouter r,
                                                        boolean isMetricsEnabled) {
-        if (latestLayout != null) {
+        if (latestLayout != null || bootstrapEndpoint != null) {
             // We are already bootstrapped, bootstrap again is not allowed.
             log.warn("Got a request to bootstrap a server which is already bootstrapped, rejecting!");
             r.sendResponse(ctx, msg, new CorfuMsg(CorfuMsgType.MANAGEMENT_ALREADY_BOOTSTRAP_ERROR));

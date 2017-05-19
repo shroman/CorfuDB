@@ -35,6 +35,7 @@ public class LayoutViewTest extends AbstractViewTest {
             throws Exception {
         CorfuRuntime r = getDefaultRuntime().connect();
         Layout l = new TestLayoutBuilder()
+                .setClusterId(r.getLayoutView().getLayout().getClusterId())
                 .setEpoch(1)
                 .addLayoutServer(SERVERS.PORT_0)
                 .addSequencer(SERVERS.PORT_0)
@@ -100,7 +101,9 @@ public class LayoutViewTest extends AbstractViewTest {
         addServer(SERVERS.PORT_0);
         addServer(SERVERS.PORT_1);
         addServer(SERVERS.PORT_2);
+        UUID clusterID = UUID.randomUUID();
         Layout l = new TestLayoutBuilder()
+                .setClusterId(clusterID)
                 .setEpoch(1L)
                 .addLayoutServer(SERVERS.PORT_0)
                 .addLayoutServer(SERVERS.PORT_1)
@@ -132,6 +135,7 @@ public class LayoutViewTest extends AbstractViewTest {
                 addServerRule(SERVERS.PORT_1, new TestRule().always().drop());
                 // New layout removes the failed server SERVERS.PORT_0
                 Layout newLayout = new TestLayoutBuilder()
+                        .setClusterId(clusterID)
                         .setEpoch(l.getEpoch() + 1)
                         .addLayoutServer(SERVERS.PORT_0)
                         .addLayoutServer(SERVERS.PORT_2)
