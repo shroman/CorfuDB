@@ -28,19 +28,24 @@ public class TxResolutionInfo implements ICorfuPayload<TxResolutionInfo> {
     @Getter
     final Map<UUID, Set<Integer>>  writeConflictParams;
 
+    @Getter
+    final Set<UUID> poisonedStreams;
+
     public TxResolutionInfo(UUID TXid, long snapshotTS) {
         this.TXid = TXid;
         this.snapshotTimestamp = snapshotTS;
         this.conflictSet = Collections.emptyMap();
         this.writeConflictParams = Collections.emptyMap();
+        this.poisonedStreams = Collections.emptySet();
     }
 
     public TxResolutionInfo(UUID TXid, long snapshotTS, Map<UUID, Set<Integer>>
-            conflictMap, Map<UUID, Set<Integer>> writeConflictParams) {
+            conflictMap, Map<UUID, Set<Integer>> writeConflictParams, Set<UUID> poisonedStreams) {
         this.TXid = TXid;
         this.snapshotTimestamp = snapshotTS;
         this.conflictSet = conflictMap;
         this.writeConflictParams = writeConflictParams;
+        this.poisonedStreams = poisonedStreams;
     }
 
     /**
@@ -75,6 +80,8 @@ public class TxResolutionInfo implements ICorfuPayload<TxResolutionInfo> {
             writeMapBuilder.put(K, V);
         }
         writeConflictParams = writeMapBuilder.build();
+
+        poisonedStreams = ICorfuPayload.setFromBuffer(buf, UUID.class);
     }
 
     /**
@@ -99,6 +106,8 @@ public class TxResolutionInfo implements ICorfuPayload<TxResolutionInfo> {
             ICorfuPayload.serialize(buf, x.getKey());
             ICorfuPayload.serialize(buf, x.getValue());
         });
+
+        ICorfuPayload.serialize(buf, poisonedStreams);
     }
 
     @Override

@@ -275,7 +275,8 @@ public class OptimisticTransactionalContext extends AbstractTransactionalContext
                             new TxResolutionInfo(getTransactionID(),
                                     getSnapshotTimestamp(),
                                     computeConflictSet.get(),
-                                    collectWriteConflictParams())
+                                    collectWriteConflictParams(),
+                                    getWriteSetInfo().getPoisonedStreams())
                     );
         } catch (TransactionAbortedException ae) {
             log.trace("Commit[{}] Rejected by sequencer", this);

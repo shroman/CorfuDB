@@ -458,20 +458,27 @@ public class SequencerServer extends AbstractServer {
         }
 
         // update the cache of conflict parameters
-        if (req.getTxnResolution() != null)
-            req.getTxnResolution().getWriteConflictParams().entrySet()
-                .stream()
-                    // for each entry
-                .forEach(txEntry ->
-                        // and for each conflict param
-                            txEntry.getValue().stream().forEach(conflictParam ->
-                                    // insert an entry with the new timestamp
-                                    // using the hash code based on the param
-                                    // and the stream id.
-                                    conflictToGlobalTailCache.put(
-                                            getConflictHashCode(txEntry
-                                                    .getKey(), conflictParam),
-                                            newTail - 1)));
+        if (req.getTxnResolution() != null) {
+            // Until we have per-stream conflict sets, any poisoned stream causes
+            // max wildcard to be updated
+            if (req.getTxnResolution().getPoisonedStreams().size() > 0) {
+                maxConflictWildcard = newTail - 1;
+            } else {
+                req.getTxnResolution().getWriteConflictParams().entrySet()
+                        .stream()
+                        // for each entry
+                        .forEach(txEntry ->
+                                // and for each conflict param
+                                txEntry.getValue().stream().forEach(conflictParam ->
+                                        // insert an entry with the new timestamp
+                                        // using the hash code based on the param
+                                        // and the stream id.
+                                        conflictToGlobalTailCache.put(
+                                                getConflictHashCode(txEntry
+                                                        .getKey(), conflictParam),
+                                                newTail - 1)));
+            }
+        }
 
         log.trace("token {} backpointers {}",
                 currentTail, backPointerMap.build());

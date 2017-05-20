@@ -1,9 +1,13 @@
 package org.corfudb.runtime.object.transactions;
 
+import com.google.common.reflect.TypeToken;
+import org.corfudb.runtime.collections.SMRMap;
 import org.corfudb.runtime.exceptions.TransactionAbortedException;
 import org.corfudb.runtime.object.ConflictParameterClass;
 import org.junit.Test;
 
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,6 +63,46 @@ public class OptimisticTransactionContextTest extends AbstractTransactionContext
                 .doesNotContain(Integer.valueOf(TEST_3), Integer.valueOf(TEST_4));
 
         getRuntime().getObjectsView().TXAbort();
+    }
+
+    @Test
+    public void checkClearConflictsAll() {
+        Map<String, String> map = getDefaultRuntime().getObjectsView()
+                .build()
+                .setStreamName("test")
+                .setTypeToken(new TypeToken<SMRMap<String, String>>() {})
+                .open();
+
+        // Holds the value t1 will read from "a"
+        final AtomicReference<String> valueHolder = new AtomicReference<>();
+
+        // Initially, map is "a", "a"
+        map.put("a", "a");
+
+        // Begin a TX on thread 1, read "a"
+        t1(this::TXBegin);
+        t1(() -> map.get("a"));
+
+        // Clear the map
+        t2(this::TXBegin);
+        t2(() -> map.clear());
+        t2(this::TXEnd);
+
+        // Save the value of "a" into valueHolder
+        t1(() -> map.get("a"))
+                .assertResult()
+                .isEqualTo("a");
+        t1(() -> valueHolder.set(map.get("a")));
+
+        // Write valueHolder (snapshot of "a") into "c"
+        t1(() -> map.put("c", valueHolder.get()));
+
+        // thread 1's TX should abort, since "a" is no longer "a"
+        // as the map has been reset,
+        // so writing "a" into "c" should be incorrect.
+        t1(this::TXEnd)
+                .assertThrows()
+                .isInstanceOf(TransactionAbortedException.class);
     }
 
 
