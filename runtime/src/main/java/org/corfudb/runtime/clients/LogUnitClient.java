@@ -64,7 +64,7 @@ public class LogUnitClient implements IClient {
     private static Object handleTrimmed(CorfuMsg msg, ChannelHandlerContext ctx, IClientRouter r)
     throws Exception
     {
-        throw new Exception("Trimmed");
+        throw new TrimmedException();
     }
 
     /** Handle an ERROR_OVERWRITE message.
@@ -276,8 +276,8 @@ public class LogUnitClient implements IClient {
      * @param stream The stream to trim.
      * @param prefix The prefix of the stream, as a global physical offset, to trim.
      */
-    public void trim(UUID stream, long prefix) {
-        router.sendMessage(CorfuMsgType.TRIM.payloadMsg(new TrimRequest(stream, prefix)));
+    public void trim(long prefix) {
+        router.sendMessage(CorfuMsgType.TRIM.payloadMsg(new TrimRequest(null, prefix)));
     }
 
     /**
